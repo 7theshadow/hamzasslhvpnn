@@ -177,6 +177,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final server = _selection!.server;
 
+    // نحل اسم دومين السيرفر لـ IP *قبل* ما نشغّل الـ VPN (وقت الشبكة عادية
+    // بدون تنل)، لتفادي مشكلة "حلقة مقفلة" بمحاولة sing-box حل الدومين من
+    // جوا نفس التنل يلي أصلاً مش شغال لسا.
+    String? resolvedIp;
+    if (server.mode == ConnectionMode.v2ray) {
+      try {
+        final raw = (server.config['v2ray_config'] ?? '').toString().trim();
+        final host = Uri.parse(raw).host;
+        resolvedIp = await SingboxConfigBuilder.resolveHostIp(host);
+      } catch (_) {
+        resolvedIp = null;
+      }
+    }
+
     final String configJson;
     try {
       configJson = SingboxConfigBuilder.build(
@@ -184,6 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
         uuid: _selection!.uuid,
         username: _selection!.username,
         password: _selection!.password,
+        resolvedIp: resolvedIp,
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
