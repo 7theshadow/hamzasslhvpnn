@@ -66,6 +66,7 @@ class SingboxConfigBuilder {
     final security = qp['security'] ?? 'none';
     final type = qp['type'] ?? 'tcp';
     final sni = qp['sni'] ?? uri.host;
+    final wsHost = qp['host'] ?? uri.host;
     final path = qp['path'] ?? '/';
     final insecure = (qp['insecure'] == '1' || qp['allowInsecure'] == '1');
     final fp = qp['fp'] ?? 'chrome';
@@ -83,7 +84,7 @@ class SingboxConfigBuilder {
       outbound['transport'] = {
         'type': 'ws',
         'path': path,
-        'headers': {'Host': sni},
+        'headers': {'Host': wsHost},
       };
     }
 
