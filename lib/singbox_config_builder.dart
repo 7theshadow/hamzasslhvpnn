@@ -21,8 +21,16 @@ class SingboxConfigBuilder {
       'log': {'level': 'warn'},
       'dns': {
         'servers': [
-          {'address': '8.8.8.8'},
-          {'address': '1.1.1.1'},
+          {
+            'type': 'udp',
+            'tag': 'dns-google',
+            'server': '8.8.8.8',
+          },
+          {
+            'type': 'udp',
+            'tag': 'dns-cloudflare',
+            'server': '1.1.1.1',
+          },
         ],
       },
       'inbounds': [
