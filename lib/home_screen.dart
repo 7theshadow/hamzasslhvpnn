@@ -13,6 +13,7 @@ import 'theme.dart';
 import 'models.dart';
 import 'server_picker_sheet.dart';
 import 'api_service.dart';
+import 'logs_screen.dart';
 
 enum ConnectionState { disconnected, connecting, connected }
 
@@ -311,7 +312,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _circleIconButton(Icons.menu, () {}),
+        _circleIconButton(
+          Icons.menu,
+          () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => LogsScreen(client: _client)),
+          ),
+        ),
         Column(
           children: [
             ClipRRect(
