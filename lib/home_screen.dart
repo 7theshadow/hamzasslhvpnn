@@ -402,9 +402,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final isConnecting = _state == ConnectionState.connecting;
 
     return GestureDetector(
-      onTap: isConnected
+      onTap: (isConnected || isConnecting)
           ? _onDisconnectPressed
-          : (isConnecting ? null : _onConnectPressed),
+          : _onConnectPressed,
       child: Container(
         width: 200,
         height: 200,
