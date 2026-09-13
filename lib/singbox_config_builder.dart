@@ -3,18 +3,37 @@
 // المخزّنة بلوحة التحكم (سواء V2Ray/VLESS أو SSH).
 
 import 'dart:convert';
+import 'dart:io';
 import 'models.dart';
 
 class SingboxConfigBuilder {
+  /// يحل اسم الدومين إلى IP حقيقي *قبل* تشغيل الـ VPN (وقت الشبكة عادية بدون
+  /// تنل)، عشان نتفادى مشكلة "حلقة مقفلة": sing-box ما يقدر يحل الدومين
+  /// من جوا نفسه لأنه التنل نفسه لسا مش شغال وبانتظار نفس الحل!
+  static Future<String?> resolveHostIp(String host) async {
+    try {
+      final addresses = await InternetAddress.lookup(host).timeout(
+        const Duration(seconds: 6),
+      );
+      if (addresses.isNotEmpty) return addresses.first.address;
+    } catch (_) {
+      // فشل الحل مؤقتاً؛ منرجع null ومنخلي sing-box يحاول بنفسه كـ fallback
+    }
+    return null;
+  }
+
   /// يبني JSON كامل جاهز لتمريره لـ client.connect(SessionOptions(config: ...))
+  /// [resolvedIp] اختياري: IP تم حله مسبقاً (خارج التنل) لدومين سيرفر VLESS،
+  /// إذا انمرر منستخدمه كـ server مباشرة بدل الدومين لتفادي مشكلة DNS loop.
   static String build({
     required ServerItem server,
     String? uuid,
     String? username,
     String? password,
+    String? resolvedIp,
   }) {
     final Map<String, dynamic> outbound = server.mode == ConnectionMode.v2ray
-        ? _buildVlessOutbound(server, uuid ?? '')
+        ? _buildVlessOutbound(server, uuid ?? '', resolvedIp)
         : _buildSshOutbound(server, username ?? '', password ?? '');
 
     final config = {
@@ -56,7 +75,11 @@ class SingboxConfigBuilder {
 
   /// يبني outbound من رابط vless://uuid@host:port?params (uuid ممكن يكون فاضي بالرابط
   /// ونعوضه من قيمة uuid يلي دخلها المستخدم بالتطبيق)
-  static Map<String, dynamic> _buildVlessOutbound(ServerItem server, String enteredUuid) {
+  static Map<String, dynamic> _buildVlessOutbound(
+    ServerItem server,
+    String enteredUuid,
+    String? resolvedIp,
+  ) {
     final raw = (server.config['v2ray_config'] ?? '').toString().trim();
     final uri = Uri.parse(raw);
 
@@ -71,10 +94,14 @@ class SingboxConfigBuilder {
     final insecure = (qp['insecure'] == '1' || qp['allowInsecure'] == '1');
     final fp = qp['fp'] ?? 'chrome';
 
+    // إذا عندنا IP محلول مسبقاً (خارج التنل) نستخدمه كعنوان اتصال مباشر،
+    // وإلا نرجع للدومين العادي (sing-box بيحاول يحله بنفسه كـ fallback).
+    final serverAddress = resolvedIp ?? uri.host;
+
     final Map<String, dynamic> outbound = {
       'type': 'vless',
       'tag': 'proxy',
-      'server': uri.host,
+      'server': serverAddress,
       'server_port': uri.hasPort ? uri.port : 443,
       'uuid': realUuid,
       'packet_encoding': 'xudp',
