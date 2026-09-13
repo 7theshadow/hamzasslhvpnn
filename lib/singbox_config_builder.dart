@@ -22,14 +22,8 @@ class SingboxConfigBuilder {
       'dns': {
         'servers': [
           {
-            'type': 'udp',
-            'tag': 'dns-google',
-            'server': '8.8.8.8',
-          },
-          {
-            'type': 'udp',
-            'tag': 'dns-cloudflare',
-            'server': '1.1.1.1',
+            'type': 'local',
+            'tag': 'dns-local',
           },
         ],
       },
