@@ -41,7 +41,6 @@ class SingboxConfigBuilder {
           'auto_route': true,
           'strict_route': true,
           'stack': 'system',
-          'sniff': true,
         },
       ],
       'outbounds': [
@@ -50,6 +49,9 @@ class SingboxConfigBuilder {
         {'type': 'block', 'tag': 'block'},
       ],
       'route': {
+        'rules': [
+          {'action': 'sniff'},
+        ],
         'auto_detect_interface': true,
         'final': 'proxy',
       },
@@ -119,4 +121,3 @@ class SingboxConfigBuilder {
     };
   }
 }
-
