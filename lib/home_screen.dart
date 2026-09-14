@@ -46,18 +46,31 @@ class _HomeScreenState extends State<HomeScreen> {
     _stateSub = _client.serviceStateStream.listen((state) {
       if (!mounted) return;
       final s = state.toString().toUpperCase();
-      if (s.contains('CONNECTED') && !s.contains('DIS')) {
-        if (_state != ConnectionState.connected) {
-          setState(() => _state = ConnectionState.connected);
-          _startTimer();
-          _loadAccountInfo();
-        }
-      } else if (s.contains('STOP') || s.contains('DISCONNECT') || s.contains('IDLE')) {
+
+      final isDisconnectedLike = s.contains('STOP') ||
+          s.contains('IDLE') ||
+          s.contains('DISCONNECT') ||
+          s.contains('ERROR') ||
+          s.contains('FAIL');
+
+      // 'STARTING'/'CONNECTING' لسا مرحلة انتقالية، مش نهائية.
+      final isTransitioning = (s.contains('START') && !s.contains('STARTED')) ||
+          s.contains('CONNECTING');
+
+      if (isDisconnectedLike) {
         _stopTimer();
         setState(() {
           _state = ConnectionState.disconnected;
           _accountInfo = null;
         });
+      } else if (!isTransitioning) {
+        // أي حالة تانية غير "معلّقة" أو "متوقفة" منعتبرها اتصال ناجح —
+        // بغض النظر شو بالضبط اسمها (started/connected/running...).
+        if (_state != ConnectionState.connected) {
+          setState(() => _state = ConnectionState.connected);
+          _startTimer();
+          _loadAccountInfo();
+        }
       }
     });
 
@@ -181,7 +194,8 @@ class _HomeScreenState extends State<HomeScreen> {
     // بدون تنل)، لتفادي مشكلة "حلقة مقفلة" بمحاولة sing-box حل الدومين من
     // جوا نفس التنل يلي أصلاً مش شغال لسا.
     String? resolvedIp;
-    if (server.mode == ConnectionMode.v2ray) {
+    if (server.mode == ConnectionMode.v2ray &&
+        (server.config['server_ip'] ?? '').toString().trim().isEmpty) {
       try {
         final raw = (server.config['v2ray_config'] ?? '').toString().trim();
         final host = Uri.parse(raw).host;
