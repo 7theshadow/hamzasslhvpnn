@@ -36,6 +36,19 @@ class SingboxConfigBuilder {
         ? _buildVlessOutbound(server, uuid ?? '', resolvedIp)
         : _buildSshOutbound(server, username ?? '', password ?? '');
 
+    // لوحة التحكم (checkUser) غالباً على نفس سيرفر الـ VPN أو نفس الشبكة —
+    // تمريرها عبر نفس نفق VPN ممكن يعمل "حلقة ذاتية" (hairpin) والسيرفر
+    // يرفض الاتصال (Connection reset by peer). فمنمررها مباشرة (direct).
+    String? panelHost;
+    try {
+      final checkUrl = server.checkUserUrl;
+      if (checkUrl != null && checkUrl.isNotEmpty) {
+        panelHost = Uri.parse(checkUrl).host;
+      }
+    } catch (_) {
+      panelHost = null;
+    }
+
     final config = {
       'log': {'level': 'warn'},
       'dns': {
@@ -66,6 +79,11 @@ class SingboxConfigBuilder {
         'rules': [
           {'action': 'sniff'},
           {'action': 'hijack-dns'},
+          if (panelHost != null && panelHost.isNotEmpty)
+            {
+              'domain': [panelHost],
+              'outbound': 'direct',
+            },
         ],
         'auto_detect_interface': true,
         'final': 'proxy',
