@@ -45,6 +45,7 @@ class SingboxConfigBuilder {
             'tag': 'dns-local',
           },
         ],
+        'strategy': 'ipv4_only',
       },
       'inbounds': [
         {
@@ -64,6 +65,7 @@ class SingboxConfigBuilder {
       'route': {
         'rules': [
           {'action': 'sniff'},
+          {'action': 'hijack-dns'},
         ],
         'auto_detect_interface': true,
         'final': 'proxy',
@@ -94,9 +96,15 @@ class SingboxConfigBuilder {
     final insecure = (qp['insecure'] == '1' || qp['allowInsecure'] == '1');
     final fp = qp['fp'] ?? 'chrome';
 
+    // إذا كان في IP جاهز محفوظ بإعدادات هالسيرفر (server_ip بلوحة التحكم)،
+    // نستخدمه فورًا بدون أي محاولة حل دومين نهائيًا — أسرع وأضمن.
+    final configuredIp = (server.config['server_ip'] ?? '').toString().trim();
+
     // إذا عندنا IP محلول مسبقاً (خارج التنل) نستخدمه كعنوان اتصال مباشر،
     // وإلا نرجع للدومين العادي (sing-box بيحاول يحله بنفسه كـ fallback).
-    final serverAddress = resolvedIp ?? uri.host;
+    final serverAddress = configuredIp.isNotEmpty
+        ? configuredIp
+        : (resolvedIp ?? uri.host);
 
     final Map<String, dynamic> outbound = {
       'type': 'vless',
@@ -105,6 +113,7 @@ class SingboxConfigBuilder {
       'server_port': uri.hasPort ? uri.port : 443,
       'uuid': realUuid,
       'packet_encoding': 'xudp',
+      'domain_strategy': 'ipv4_only',
     };
 
     if (type == 'ws') {
