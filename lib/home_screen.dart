@@ -35,6 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _clientReady = false;
   StreamSubscription? _stateSub;
   StreamSubscription? _faultSub;
+  String? _lastConfigJson;
 
   @override
   void initState() {
@@ -223,6 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       await _client.checkConfig(configJson);
+      setState(() => _lastConfigJson = configJson);
 
       setState(() => _state = ConnectionState.connecting);
 
@@ -344,7 +346,13 @@ class _HomeScreenState extends State<HomeScreen> {
         _circleIconButton(
           Icons.menu,
           () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => LogsScreen(client: _client)),
+            MaterialPageRoute(
+              builder: (_) => LogsScreen(
+                client: _client,
+                server: _selection?.server,
+                configJson: _lastConfigJson,
+              ),
+            ),
           ),
         ),
         Column(
